@@ -1,0 +1,25 @@
+{
+  "name": "teacher-schedule",
+  "version": "1.0.0",
+  "description": "Веб-приложение для отображения расписания преподавателей",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx http-server -p 8080 -o",
+    "dev": "npx live-server --port=8080 --open=/index.html"
+  },
+  "keywords": [
+    "schedule",
+    "teachers",
+    "university",
+    "timetable"
+  ],
+  "author": "Schedule App",
+  "license": "MIT",
+  "devDependencies": {
+    "http-server": "^14.1.1",
+    "live-server": "^1.2.2"
+  },
+  "dependencies": {
+    "xlsx": "^0.18.5"
+  }
+}
