@@ -1,17 +1,21 @@
 {
   "name": "teacher-schedule",
-  "version": "1.0.0",
-  "description": "Веб-приложение для отображения расписания преподавателей",
+  "version": "2.0.0",
+  "description": "Современное веб-приложение для отображения расписания преподавателей с поддержкой выходных дней, темной темы и умной фильтрацией",
   "main": "index.html",
   "scripts": {
-    "start": "npx http-server -p 8080 -o",
-    "dev": "npx live-server --port=8080 --open=/index.html"
+    "start": "npx http-server -p 8000 -o",
+    "dev": "npx live-server --port=8000 --open=/index.html",
+    "serve": "python -m http.server 8000"
   },
   "keywords": [
     "schedule",
     "teachers",
     "university",
-    "timetable"
+    "timetable",
+    "holidays",
+    "dark-theme",
+    "responsive"
   ],
   "author": "Schedule App",
   "license": "MIT",
@@ -21,5 +25,16 @@
   },
   "dependencies": {
     "xlsx": "^0.18.5"
-  }
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/teacher-schedule.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/teacher-schedule/issues"
+  },
+  "homepage": "https://github.com/your-username/teacher-schedule#readme"
 }

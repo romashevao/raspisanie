@@ -23,6 +23,32 @@ const DAYS_OF_WEEK = {
 const DAY_NAMES = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
 const DAY_NAMES_SHORT = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
 
+// Праздничные дни 2025 года (дни, когда занятий нет)
+const HOLIDAYS_2025 = [
+    '01.01.2025', // Новый год
+    '02.01.2025', // Новый год
+    '03.01.2025', // Новый год
+    '04.01.2025', // Новый год
+    '05.01.2025', // Новый год
+    '06.01.2025', // Новый год
+    '07.01.2025', // Новый год
+    '08.01.2025', // Новый год
+    '23.02.2025', // День защитника Отечества
+    '08.03.2025', // Международный женский день
+    '01.05.2025', // Праздник Весны и Труда
+    '09.05.2025', // День Победы
+    '12.06.2025', // День России
+    '04.11.2025', // День народного единства
+    '31.12.2025'  // Новый год (предпраздничный)
+];
+
+// Переносы выходных дней 2025 года (субботы, которые стали рабочими)
+const WORKING_SATURDAYS_2025 = [
+    '08.02.2025', // Суббота - рабочий день (перенос с 23.02)
+    '10.05.2025', // Суббота - рабочий день (перенос с 09.05)
+    '07.11.2025'  // Суббота - рабочий день (перенос с 04.11)
+];
+
 // Инициализация приложения
 document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
@@ -274,6 +300,29 @@ function updateScheduleInfo() {
     }
 }
 
+// Проверка, является ли день праздничным
+function isHoliday(date) {
+    const dateStr = formatDateForInput(date);
+    return HOLIDAYS_2025.includes(dateStr);
+}
+
+// Проверка, является ли день рабочим (включая рабочие субботы)
+function isWorkingDay(date) {
+    const dayOfWeek = date.getDay();
+    
+    // Воскресенье всегда выходной
+    if (dayOfWeek === 0) return false;
+    
+    // Суббота - проверяем, не является ли она рабочим днем
+    if (dayOfWeek === 6) {
+        const dateStr = formatDateForInput(date);
+        return WORKING_SATURDAYS_2025.includes(dateStr);
+    }
+    
+    // Понедельник-пятница - проверяем, не является ли праздничным днем
+    return !isHoliday(date);
+}
+
 // Получение номера недели (I, II, III, ...)
 function getWeekNumber(date) {
     const startDate = new Date(2025, 8, 1); // 1 сентября 2025
@@ -299,6 +348,13 @@ function updateSchedule() {
                 weekBtn.innerHTML = '<i class="fas fa-calendar-week"></i> Неделя';
             }
         }
+        return;
+    }
+    
+    // Проверяем, является ли выбранная дата рабочим днем
+    if (!isWorkingDay(selectedDate)) {
+        clearSchedule();
+        showHolidayMessage();
         return;
     }
     
@@ -361,6 +417,11 @@ function isLessonStartedOnDate(record, date) {
 
 // Получение занятий на день
 function getLessonsForDay(teacher, dayOfWeek, weekNumber, date = selectedDate) {
+    // Проверяем, является ли день рабочим
+    if (!isWorkingDay(date)) {
+        return [];
+    }
+    
     return scheduleData.filter(record => {
         if (record.teacher !== teacher) return false;
         if (DAYS_OF_WEEK[record.dayOfWeek.toLowerCase()] !== dayOfWeek) return false;
@@ -428,7 +489,20 @@ function clearSchedule() {
         content.querySelector('.lesson-subject').textContent = '—';
         content.querySelector('.lesson-type').textContent = '';
         content.querySelector('.lesson-details').textContent = '';
+        cell.classList.remove('current', 'next', 'holiday-cell');
+    });
+}
+
+// Показать сообщение о выходном дне
+function showHolidayMessage() {
+    const lessonCells = document.querySelectorAll('.lesson-cell');
+    lessonCells.forEach(cell => {
+        const content = cell.querySelector('.lesson-content');
+        content.querySelector('.lesson-subject').textContent = 'Выходной день';
+        content.querySelector('.lesson-type').textContent = 'Занятий нет';
+        content.querySelector('.lesson-details').textContent = '';
         cell.classList.remove('current', 'next');
+        cell.classList.add('holiday-cell');
     });
 }
 
@@ -508,16 +582,23 @@ function showWeekSchedule() {
     const startOfWeek = getStartOfWeek(selectedDate);
     
     // Создаем расписание для каждого дня недели
-    for (let i = 0; i < 5; i++) { // Пн-Пт
+    for (let i = 0; i < 7; i++) { // Пн-Вс
         const dayDate = new Date(startOfWeek);
         dayDate.setDate(startOfWeek.getDate() + i);
         
         const dayOfWeek = i + 1;
         const weekNumber = getWeekNumber(dayDate);
-        const dayLessons = getLessonsForDay(selectedTeacher, dayOfWeek, weekNumber, dayDate);
         
-        const dayElement = createDayElement(dayDate, dayLessons);
-        weekDays.appendChild(dayElement);
+        // Проверяем, является ли день рабочим
+        if (isWorkingDay(dayDate)) {
+            const dayLessons = getLessonsForDay(selectedTeacher, dayOfWeek, weekNumber, dayDate);
+            const dayElement = createDayElement(dayDate, dayLessons);
+            weekDays.appendChild(dayElement);
+        } else {
+            // Создаем элемент для выходного дня
+            const dayElement = createHolidayDayElement(dayDate);
+            weekDays.appendChild(dayElement);
+        }
     }
     
     weekSchedule.style.display = 'block';
@@ -571,6 +652,28 @@ function createDayElement(date, lessons) {
             }
         });
     }
+    
+    dayElement.appendChild(dayHeader);
+    dayElement.appendChild(dayLessons);
+    
+    return dayElement;
+}
+
+// Создание элемента выходного дня для недельного расписания
+function createHolidayDayElement(date) {
+    const dayElement = document.createElement('div');
+    dayElement.className = 'day-schedule holiday-day';
+    
+    const dayHeader = document.createElement('div');
+    dayHeader.className = 'day-header';
+    dayHeader.innerHTML = `
+        <div class="day-name">${DAY_NAMES[date.getDay()]}</div>
+        <div class="day-date">${formatDate(date)}</div>
+    `;
+    
+    const dayLessons = document.createElement('div');
+    dayLessons.className = 'day-lessons';
+    dayLessons.innerHTML = '<div class="empty-state holiday-message">Выходной день</div>';
     
     dayElement.appendChild(dayHeader);
     dayElement.appendChild(dayLessons);

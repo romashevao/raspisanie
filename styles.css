@@ -613,6 +613,47 @@ body {
     color: var(--text-secondary);
 }
 
+/* Стили для выходных дней */
+.holiday-day {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+    border-color: #ff5252;
+    color: white;
+}
+
+.holiday-day .day-header {
+    border-bottom-color: rgba(255, 255, 255, 0.3);
+}
+
+.holiday-day .day-name {
+    color: white;
+}
+
+.holiday-day .day-date {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.holiday-message {
+    text-align: center;
+    font-weight: 600;
+    color: white;
+    font-size: 1.1rem;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    border: 2px dashed rgba(255, 255, 255, 0.3);
+}
+
+/* Стили для сообщения о выходном дне в основном расписании */
+.holiday-cell .lesson-content .lesson-subject {
+    color: #ff6b6b !important;
+    font-weight: 600;
+}
+
+.holiday-cell .lesson-content .lesson-type {
+    color: #ff6b6b !important;
+    font-style: italic;
+}
+
 /* Responsive Design */
 @media (max-width: 1024px) {
     .controls {
