@@ -160,6 +160,8 @@ function getBuiltInScheduleData() {
 осенний;Переработки минерального сырья;6;очная;;ОП-20;II Проектирование обогатительных фабрик;25;Доц. Ромашев А.О.;2;;практика;6307;Уч.ц.1;8.9;31.10;пн;10;.35;12;.05;;;;ос;;;;;;;;;;;;;;;;;
 осенний;Переработки минерального сырья;6;очная;;ОП-20;I Проектирование обогатительных фабрик;25;Доц. Ромашев А.О.;1;;практика;6307;Уч.ц.1;1.9;31.10;пн;12;.35;14;.05;;;;ос;;;;;;;;;;;;;;;;;
 осенний;Переработки минерального сырья;6;очная;;ОП-20;II Проектирование обогатительных фабрик;25;Доц. Ромашев А.О.;2;;практика;6307;Уч.ц.1;8.9;31.10;пн;12;.35;14;.05;;;;ос;;;;;;;;;;;;;;;;;
+осенний;Переработки минерального сырья;6;очная;;ОП-20;Проектирование обогатительных фабрик;25;Доц. Ромашев А.О.;;22;практика;6307;Уч.ц.1;22.9;31.10;пн;10;.35;12;.05;;;;ос;;;;;;;;;;;;;;;;;
+осенний;Переработки минерального сырья;6;очная;;ОП-20;Проектирование обогатительных фабрик;25;Доц. Ромашев А.О.;;22;практика;6307;Уч.ц.1;22.9;31.10;пн;12;.35;14;.05;;;;ос;;;;;;;;;;;;;;;;;
 осенний;Институт базового инженерного образования;2;очная;9;ОТ-24-28;Основы обогащения минерального сырья;25;Доц. Ромашев А.О.;;24;лекция;823;Инж.корп.;2.9;9.12;вт;10;.35;12;.05;;;;ос;;;;;;;;;;;;;;;;;
 осенний;Институт базового инженерного образования;2;очная;9;ОТ-24-28;Основы обогащения минерального сырья;25;Асп. Абурова В.А.;1;;практика;803;Инж.корп.;2.9;9.12;вт;12;.35;14;.05;;;;ос;;;;;;;;;;;;;;;;;
 осенний;Переработки минерального сырья;4;очная;;ОП-22;Основы проектирования горных предприятий;25;Доц. Ромашев А.О.;;19;лекция;6203;Уч.ц.1;3.9;10.12;ср;8;.50;10;.20;;;;ос;;;;;;;;;;;;;;;;;
@@ -205,6 +207,8 @@ function setupEventListeners() {
             }
         }
     });
+    
+    // Обработчик для обновления расписания при вводе даты уже добавлен в setupDateInputFormat
     
     document.getElementById('todayBtn').addEventListener('click', function() {
         selectedDate = new Date();
@@ -278,8 +282,8 @@ function getWeekNumber(date) {
     
     if (diffWeeks < 0) return 'I';
     
-    const weekNumbers = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII', 'XIII', 'XIV', 'XV'];
-    return weekNumbers[diffWeeks % 15] || 'I';
+    // Недели чередуются I-II-I-II и т.д.
+    return (diffWeeks % 2 === 0) ? 'I' : 'II';
 }
 
 // Обновление расписания
@@ -339,11 +343,30 @@ function isLessonActiveOnDate(record, date) {
     return date <= endDate;
 }
 
+// Проверка, должно ли занятие отображаться с указанной даты
+function isLessonStartedOnDate(record, date) {
+    // Парсим дату начала из записи
+    const startDateStr = record.startDate;
+    if (!startDateStr) return true;
+    
+    // Парсим дату в формате "дд.мм"
+    const [day, month] = startDateStr.split('.');
+    if (!day || !month) return true;
+    
+    // Создаем дату начала для текущего года
+    const startDate = new Date(2025, parseInt(month) - 1, parseInt(day));
+    
+    return date >= startDate;
+}
+
 // Получение занятий на день
 function getLessonsForDay(teacher, dayOfWeek, weekNumber, date = selectedDate) {
     return scheduleData.filter(record => {
         if (record.teacher !== teacher) return false;
         if (DAYS_OF_WEEK[record.dayOfWeek.toLowerCase()] !== dayOfWeek) return false;
+        
+        // Проверяем дату начала занятий
+        if (!isLessonStartedOnDate(record, date)) return false;
         
         // Проверяем дату окончания занятий
         if (!isLessonActiveOnDate(record, date)) return false;
@@ -352,9 +375,7 @@ function getLessonsForDay(teacher, dayOfWeek, weekNumber, date = selectedDate) {
         const discipline = record.discipline.toLowerCase();
         if (discipline.startsWith('i ') && weekNumber !== 'I') return false;
         if (discipline.startsWith('ii ') && weekNumber !== 'II') return false;
-        if (discipline.startsWith('iii ') && weekNumber !== 'III') return false;
-        if (discipline.startsWith('iv ') && weekNumber !== 'IV') return false;
-        if (discipline.startsWith('v ') && weekNumber !== 'V') return false;
+        // Если нет префикса I или II, занятие проводится каждую неделю
         
         return true;
     });
@@ -377,10 +398,7 @@ function displaySchedule(lessons) {
                 // Название предмета (убираем префикс недели)
                 let subject = lesson.discipline;
                 if (subject.toLowerCase().startsWith('i ') || 
-                    subject.toLowerCase().startsWith('ii ') ||
-                    subject.toLowerCase().startsWith('iii ') ||
-                    subject.toLowerCase().startsWith('iv ') ||
-                    subject.toLowerCase().startsWith('v ')) {
+                    subject.toLowerCase().startsWith('ii ')) {
                     subject = subject.substring(subject.indexOf(' ') + 1);
                 }
                 
@@ -533,10 +551,7 @@ function createDayElement(date, lessons) {
                 
                 let subject = lesson.discipline;
                 if (subject.toLowerCase().startsWith('i ') || 
-                    subject.toLowerCase().startsWith('ii ') ||
-                    subject.toLowerCase().startsWith('iii ') ||
-                    subject.toLowerCase().startsWith('iv ') ||
-                    subject.toLowerCase().startsWith('v ')) {
+                    subject.toLowerCase().startsWith('ii ')) {
                     subject = subject.substring(subject.indexOf(' ') + 1);
                 }
                 
@@ -649,17 +664,56 @@ function setupDateInputFormat() {
     const dateInput = document.getElementById('dateInput');
     
     // Добавляем обработчик для автоматического форматирования при вводе
-    dateInput.addEventListener('input', function() {
-        let value = this.value.replace(/\D/g, ''); // Убираем все нецифровые символы
+    dateInput.addEventListener('input', function(e) {
+        let value = this.value;
+        let cursorPos = this.selectionStart;
         
-        if (value.length >= 2) {
-            value = value.substring(0, 2) + '.' + value.substring(2);
-        }
-        if (value.length >= 5) {
-            value = value.substring(0, 5) + '.' + value.substring(5, 9);
+        // Убираем все нецифровые символы
+        let digitsOnly = value.replace(/\D/g, '');
+        
+        // Ограничиваем длину до 8 цифр (ддммгггг)
+        if (digitsOnly.length > 8) {
+            digitsOnly = digitsOnly.substring(0, 8);
         }
         
-        this.value = value;
+        // Форматируем дату
+        let formattedValue = '';
+        if (digitsOnly.length >= 2) {
+            formattedValue = digitsOnly.substring(0, 2) + '.';
+            if (digitsOnly.length >= 4) {
+                formattedValue += digitsOnly.substring(2, 4) + '.';
+                if (digitsOnly.length >= 8) {
+                    formattedValue += digitsOnly.substring(4, 8);
+                } else {
+                    formattedValue += digitsOnly.substring(4);
+                }
+            } else {
+                formattedValue += digitsOnly.substring(2);
+            }
+        } else {
+            formattedValue = digitsOnly;
+        }
+        
+        this.value = formattedValue;
+        
+        // Восстанавливаем позицию курсора
+        if (cursorPos <= 2) {
+            this.setSelectionRange(cursorPos, cursorPos);
+        } else if (cursorPos <= 5) {
+            this.setSelectionRange(cursorPos + 1, cursorPos + 1);
+        } else {
+            this.setSelectionRange(cursorPos + 2, cursorPos + 2);
+        }
+        
+        // Обновляем расписание если дата полная
+        if (formattedValue.length === 10) {
+            const date = parseDateFromInput(formattedValue);
+            if (date && !isNaN(date.getTime())) {
+                selectedDate = date;
+                updateScheduleInfo();
+                updateSchedule();
+            }
+        }
     });
     
     // Добавляем обработчик для валидации при потере фокуса
@@ -681,6 +735,17 @@ function setupDateInputFormat() {
     // Добавляем обработчик для сброса стиля при фокусе
     dateInput.addEventListener('focus', function() {
         this.style.borderColor = '#e1e5e9';
+    });
+    
+    // Разрешаем вставку и другие операции
+    dateInput.addEventListener('paste', function(e) {
+        e.preventDefault();
+        let pastedText = (e.clipboardData || window.clipboardData).getData('text');
+        let digitsOnly = pastedText.replace(/\D/g, '');
+        if (digitsOnly.length <= 8) {
+            this.value = digitsOnly;
+            this.dispatchEvent(new Event('input'));
+        }
     });
 }
 
