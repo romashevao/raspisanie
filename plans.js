@@ -13,8 +13,11 @@ let teachers = []; // список всех преподавателей
     } catch (_) {}
 
     const csvText = await fetchCsv();
+    console.log('CSV текст загружен:', csvText ? 'да' : 'нет');
     allPlans = buildPlans(csvText);
+    console.log('Планы построены:', allPlans.length);
     teachers = extractTeachers(allPlans);
+    console.log('Преподаватели извлечены:', teachers.length);
     
     populateTeacherFilter();
     renderPlans(allPlans);
@@ -47,12 +50,15 @@ let teachers = []; // список всех преподавателей
 async function fetchCsv() {
   try {
     const res = await fetch('OP.csv');
+    console.log('Статус ответа:', res.status);
     const text = await res.text();
+    console.log('CSV размер:', text.length, 'символов');
     if (text && text.trim().length > 0) return text;
-  } catch (_) {
-    // ignore
+  } catch (e) {
+    console.log('Ошибка fetch:', e);
   }
   // Фолбэк: встроенные данные
+  console.log('Используем встроенные данные');
   return getBuiltInScheduleData();
 }
 
@@ -162,7 +168,7 @@ function renderPlans(list) {
     const tr = document.createElement('tr');
     const practitioners = item.practitioners.length ? item.practitioners.join(', ') : '—';
     tr.innerHTML = `
-      <td><span class="clickable-discipline" onclick="showDisciplineDetails('${escapeHtml(item.discipline)}')">${escapeHtml(item.discipline)}</span></td>
+      <td><span class="clickable-discipline" onclick="showDisciplineDetails('${item.discipline.replace(/'/g, "\\'")}')">${escapeHtml(item.discipline)}</span></td>
       <td>${escapeHtml(item.lecturer || '—')}</td>
       <td>${escapeHtml(practitioners)}</td>
     `;
