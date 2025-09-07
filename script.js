@@ -4,7 +4,8 @@ let teachers = [];
 let currentDate = new Date();
 let selectedTeacher = '';
 let selectedDate = new Date();
-let isDatePickerOpening = false;
+let isDatePickerOpening = false; // больше не используем задержки, оставлено для совместимости
+let hiddenDatePicker = null; // постоянный скрытый input[type="date"]
 
 // Константы для времени занятий
 const LESSON_TIMES = {
@@ -872,38 +873,16 @@ function setupDateInputFormat() {
 }
 
 // Показать календарь для выбора даты
-function showDatePicker() {
-    if (isDatePickerOpening) return;
-    isDatePickerOpening = true;
-
-    // Создаем скрытое поле date для использования встроенного календаря браузера
-    const tempDateInput = document.createElement('input');
-    tempDateInput.type = 'date';
-    tempDateInput.tabIndex = -1;
-    tempDateInput.setAttribute('aria-hidden', 'true');
-    tempDateInput.style.position = 'absolute';
-    tempDateInput.style.left = '-9999px';
-    tempDateInput.style.opacity = '0';
-
-    // Устанавливаем текущую дату
-    if (selectedDate) {
-        const year = selectedDate.getFullYear();
-        const month = (selectedDate.getMonth() + 1).toString().padStart(2, '0');
-        const day = selectedDate.getDate().toString().padStart(2, '0');
-        tempDateInput.value = `${year}-${month}-${day}`;
-    }
-
-    document.body.appendChild(tempDateInput);
-
-    const cleanup = () => {
-        isDatePickerOpening = false;
-        if (document.body.contains(tempDateInput)) {
-            document.body.removeChild(tempDateInput);
-        }
-    };
-
-    // Обрабатываем выбор даты
-    tempDateInput.addEventListener('change', function() {
+function ensureHiddenDatePicker() {
+    if (hiddenDatePicker && document.body.contains(hiddenDatePicker)) return hiddenDatePicker;
+    hiddenDatePicker = document.createElement('input');
+    hiddenDatePicker.type = 'date';
+    hiddenDatePicker.tabIndex = -1;
+    hiddenDatePicker.setAttribute('aria-hidden', 'true');
+    hiddenDatePicker.style.position = 'absolute';
+    hiddenDatePicker.style.left = '-9999px';
+    hiddenDatePicker.style.opacity = '0';
+    hiddenDatePicker.addEventListener('change', function() {
         if (this.value) {
             const date = new Date(this.value);
             selectedDate = date;
@@ -911,30 +890,35 @@ function showDatePicker() {
             updateScheduleInfo();
             updateSchedule();
         }
-        cleanup();
     });
+    document.body.appendChild(hiddenDatePicker);
+    return hiddenDatePicker;
+}
 
-    // Убираем временное поле при потере фокуса (закрытие без выбора)
-    tempDateInput.addEventListener('blur', function() {
-        setTimeout(() => {
-            cleanup();
-        }, 100);
-    });
-
-    // Показываем календарь: сначала фокус, затем showPicker() в микрозадаче
-    tempDateInput.focus({ preventScroll: true });
-    setTimeout(() => {
-        try {
-            if (typeof tempDateInput.showPicker === 'function') {
-                tempDateInput.showPicker();
-            } else {
-                tempDateInput.click();
-            }
-        } catch (e) {
-            // Fallback для браузеров, где нужен пользовательский фокус/тайминг
-            try { tempDateInput.click(); } catch (_) {}
+function showDatePicker() {
+    const picker = ensureHiddenDatePicker();
+    // Устанавливаем текущую дату перед показом
+    if (selectedDate) {
+        const year = selectedDate.getFullYear();
+        const month = (selectedDate.getMonth() + 1).toString().padStart(2, '0');
+        const day = selectedDate.getDate().toString().padStart(2, '0');
+        picker.value = `${year}-${month}-${day}`;
+    } else {
+        picker.value = '';
+    }
+    try {
+        picker.focus({ preventScroll: true });
+    } catch (_) {}
+    try {
+        if (typeof picker.showPicker === 'function') {
+            picker.showPicker(); // мгновенно без setTimeout
+        } else {
+            picker.click();
         }
-    }, 0);
+    } catch (e) {
+        // Доп. попытка
+        try { picker.click(); } catch (_) {}
+    }
 }
 
 // Переключение темы
