@@ -904,17 +904,46 @@ function showDatePicker() {
     };
     hiddenDatePicker.addEventListener('change', handler, { once: true });
 
+    // Фокусируем для WebKit/Edge
     try { hiddenDatePicker.focus({ preventScroll: true }); } catch (_) {}
-    try {
-        if (typeof hiddenDatePicker.showPicker === 'function') {
-            hiddenDatePicker.showPicker();
-        } else {
-            hiddenDatePicker.click();
-        }
-    } catch (_) {
-        try { hiddenDatePicker.click(); } catch (_) {}
+
+    const tryOpen = () => {
+        try {
+            if (typeof hiddenDatePicker.showPicker === 'function') {
+                hiddenDatePicker.showPicker();
+                return true;
+            }
+        } catch (_) {}
+        try { hiddenDatePicker.click(); return true; } catch (_) {}
+        return false;
+    };
+
+    // Первая попытка
+    if (!tryOpen()) {
+        // Ретрай через микро-таймаут
+        setTimeout(() => {
+            if (!tryOpen()) {
+                // Второй ретрай с установкой фокуса на кнопку
+                const btn = document.getElementById('datePickerBtn');
+                try { btn && btn.focus({ preventScroll: true }); } catch (_) {}
+                setTimeout(() => { tryOpen(); }, 0);
+            }
+        }, 0);
     }
 }
+
+// Открытие календаря по Enter на текстовом поле
+document.addEventListener('DOMContentLoaded', function() {
+    const field = document.getElementById('dateInput');
+    if (field) {
+        field.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                showDatePicker();
+            }
+        });
+    }
+});
 
 // Переключение темы
 function toggleTheme() {
