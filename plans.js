@@ -1,6 +1,14 @@
 // Загружает OP.csv и строит таблицу дисциплин с лектором и руководителями практик
 (async function initPlans() {
   try {
+    // Синхронизируем тему с главной страницей
+    try {
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme === 'dark') {
+        document.body.setAttribute('data-theme', 'dark');
+      }
+    } catch (_) {}
+
     const csvText = await fetchCsv();
     const list = buildPlans(csvText);
     renderPlans(list);
@@ -18,11 +26,22 @@
 async function fetchCsv() {
   try {
     const res = await fetch('OP.csv');
-    return await res.text();
+    const text = await res.text();
+    if (text && text.trim().length > 0) return text;
   } catch (_) {
-    // Фолбэк: возьмём встроенные данные из index.html логики невозможно, поэтому отобразим пусто
-    return '';
+    // ignore
   }
+  // Фолбэк: встроенные данные
+  return getBuiltInScheduleData();
+}
+
+// Минимальный бэкап встроенных данных (заголовки и несколько строк), синхронизирован с index.html
+function getBuiltInScheduleData() {
+  return `семестр;Фак-т;Курс;Ф.обуч;Примеч.;Группа:;Дисциплина;каф.;Преподаватель;№ груп.;кол-во человек;Вид занятия;аудитория;Корпус;Дата;Дата(конец диапазона);День;Нач.з.час;Нач.з.мин;Кон.з.час;Кон.з.мин;Сессия;Месяц;Время диапазон;1
+осенний;Переработки минерального сырья;4;очная;;ОП-22;I Моделирование процессов обогащения;25;Асс. Кузнецов В.В.;;19;практика;3308;Уч.ц.1;2.9;9.12;вт;10;.35;12;.05;;;;
+осенний;Переработки минерального сырья;6;очная;;ОП-20;Технология отходов;25;Доц. Афанасова А.В.;;22;лекция;6203;Уч.ц.1;1.9;31.10;пн;8;.50;10;.20;;;;
+осенний;Переработки минерального сырья;5;очная;;ОП-21;Гравитационные методы обогащения;25;Доц. Афанасова А.В.;;22;лекция;6203;Уч.ц.1;4.9;11.12;чт;14;.15;15;.45;;;;
+осенний;Переработки минерального сырья;5;очная;;ОП-21;II Гравитационные методы обогащения;25;Доц. Афанасова А.В.;;22;практика;6203;Уч.ц.1;12.9;5.12;пт;10;.35;12;.05;;;;`;
 }
 
 // Возвращает массив: { discipline, lecturer, practitioners[] }
@@ -35,7 +54,7 @@ function buildPlans(csvText) {
     const line = lines[i].trim();
     if (!line) continue;
     const cols = line.split(';');
-    if (cols.length < 20) continue;
+    if (cols.length < 21) continue;
 
     let discipline = cols[6] ? cols[6].trim() : '';
     if (!discipline) continue;
