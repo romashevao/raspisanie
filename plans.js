@@ -13,11 +13,8 @@ let teachers = []; // список всех преподавателей
     } catch (_) {}
 
     const csvText = await fetchCsv();
-    console.log('CSV текст загружен:', csvText ? 'да' : 'нет');
     allPlans = buildPlans(csvText);
-    console.log('Планы построены:', allPlans.length);
     teachers = extractTeachers(allPlans);
-    console.log('Преподаватели извлечены:', teachers.length);
     
     populateTeacherFilter();
     renderPlans(allPlans);
@@ -50,15 +47,12 @@ let teachers = []; // список всех преподавателей
 async function fetchCsv() {
   try {
     const res = await fetch('OP.csv');
-    console.log('Статус ответа:', res.status);
     const text = await res.text();
-    console.log('CSV размер:', text.length, 'символов');
     if (text && text.trim().length > 0) return text;
   } catch (e) {
-    console.log('Ошибка fetch:', e);
+    // ignore
   }
   // Фолбэк: встроенные данные
-  console.log('Используем встроенные данные');
   return getBuiltInScheduleData();
 }
 
@@ -228,9 +222,11 @@ function showDisciplineDetails(disciplineName) {
 function getDisciplineLessons(disciplineName) {
   if (!rawScheduleData.length) return [];
   
-  return rawScheduleData.filter(row => {
+  const lessons = [];
+  
+  rawScheduleData.forEach(row => {
     let discipline = row[6] ? row[6].trim() : '';
-    if (!discipline) return false;
+    if (!discipline) return;
     
     // Убираем префикс I/II из названия дисциплины для сравнения
     const low = discipline.toLowerCase();
@@ -238,13 +234,29 @@ function getDisciplineLessons(disciplineName) {
       discipline = discipline.substring(discipline.indexOf(' ') + 1).trim();
     }
     
-    return discipline === disciplineName;
-  }).map(row => ({
-    date: row[14] ? row[14].trim() : '',
-    type: row[11] ? row[11].trim() : '',
-    teacher: row[8] ? row[8].trim() : ''
-  })).sort((a, b) => {
-    // Сортируем по дате
+    if (discipline === disciplineName) {
+      const startDate = row[14] ? row[14].trim() : '';
+      const endDate = row[15] ? row[15].trim() : '';
+      const dayOfWeek = row[16] ? row[16].trim() : '';
+      const lessonType = row[11] ? row[11].trim() : '';
+      const teacher = row[8] ? row[8].trim() : '';
+      
+      if (startDate && endDate && dayOfWeek) {
+        // Генерируем все даты занятий в диапазоне
+        const dates = generateLessonDates(startDate, endDate, dayOfWeek);
+        dates.forEach(date => {
+          lessons.push({
+            date: date,
+            type: lessonType,
+            teacher: teacher
+          });
+        });
+      }
+    }
+  });
+  
+  // Сортируем по дате
+  return lessons.sort((a, b) => {
     const dateA = a.date.split('.');
     const dateB = b.date.split('.');
     if (dateA.length === 2 && dateB.length === 2) {
@@ -258,6 +270,57 @@ function getDisciplineLessons(disciplineName) {
     }
     return 0;
   });
+}
+
+// Функция для генерации дат занятий в диапазоне
+function generateLessonDates(startDateStr, endDateStr, dayOfWeek) {
+  const dates = [];
+  
+  // Парсим начальную и конечную даты
+  const startParts = startDateStr.split('.');
+  const endParts = endDateStr.split('.');
+  
+  if (startParts.length !== 2 || endParts.length !== 2) return dates;
+  
+  const startDay = parseInt(startParts[0]);
+  const startMonth = parseInt(startParts[1]);
+  const endDay = parseInt(endParts[0]);
+  const endMonth = parseInt(endParts[1]);
+  
+  if (isNaN(startDay) || isNaN(startMonth) || isNaN(endDay) || isNaN(endMonth)) return dates;
+  
+  // Создаем даты
+  const currentYear = new Date().getFullYear();
+  const startDate = new Date(currentYear, startMonth - 1, startDay);
+  const endDate = new Date(currentYear, endMonth - 1, endDay);
+  
+  if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return dates;
+  
+  // Маппинг дней недели
+  const dayMap = {
+    'пн': 1, 'вт': 2, 'ср': 3, 'чт': 4, 'пт': 5, 'сб': 6, 'вс': 0
+  };
+  
+  const targetDay = dayMap[dayOfWeek.toLowerCase()];
+  if (targetDay === undefined) return dates;
+  
+  // Находим первое вхождение нужного дня недели
+  let currentDate = new Date(startDate);
+  while (currentDate.getDay() !== targetDay && currentDate <= endDate) {
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+  
+  // Генерируем все даты с интервалом в неделю
+  while (currentDate <= endDate) {
+    const day = currentDate.getDate();
+    const month = currentDate.getMonth() + 1;
+    dates.push(`${day}.${month}`);
+    
+    // Переходим к следующей неделе
+    currentDate.setDate(currentDate.getDate() + 7);
+  }
+  
+  return dates;
 }
 
 // Функция для создания таблицы занятий
