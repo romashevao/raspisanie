@@ -47,14 +47,18 @@ function getBuiltInScheduleData() {
 // Возвращает массив: { discipline, lecturer, practitioners[] }
 function buildPlans(csvText) {
   if (!csvText) return [];
-  const lines = csvText.split('\n');
+  // Нормализуем переносы строк (CRLF/LF) и удалим кавычки в заголовках
+  const lines = csvText.replace(/\r\n?/g, '\n').split('\n');
   const plansMap = new Map(); // key: нормализованная дисциплина без префикса I/II
 
-  for (let i = 4; i < lines.length; i++) {
+  // Некоторые файлы содержат 4 служебные строки в начале — пропустим первые 4,
+  // но если данных мало, начнём с 0
+  const startIdx = Math.min(4, Math.max(0, lines.length - 1));
+  for (let i = startIdx; i < lines.length; i++) {
     const line = lines[i].trim();
     if (!line) continue;
     const cols = line.split(';');
-    if (cols.length < 21) continue;
+    if (cols.length < 15) continue; // минимально достаточное кол-во полей
 
     let discipline = cols[6] ? cols[6].trim() : '';
     if (!discipline) continue;

@@ -284,13 +284,7 @@ function setupEventListeners() {
         toggleTheme();
     });
 
-    // Переход на страницу планов
-    const plansBtn = document.getElementById('plansBtn');
-    if (plansBtn) {
-        plansBtn.addEventListener('click', function() {
-            window.location.href = 'plans.html';
-        });
-    }
+    // Переход на страницу планов теперь через <a href>, обработчик не нужен
 }
 
 // Обновление информации о дате и времени
