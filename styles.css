@@ -1062,3 +1062,80 @@ body {
 #plansTable tbody tr:hover {
     background-color: var(--row-hover-bg);
 }
+
+/* Стили для модального окна дисциплины */
+#disciplineModal .modal-content {
+    max-width: 800px;
+}
+
+.discipline-details-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+
+.discipline-details-table th,
+.discipline-details-table td {
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    text-align: center;
+}
+
+.discipline-details-table th {
+    background-color: var(--header-bg);
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.discipline-details-table td:first-child {
+    text-align: center;
+    font-weight: 500;
+}
+
+.discipline-details-table td:nth-child(2) {
+    text-align: left;
+}
+
+.discipline-details-table td:nth-child(3) {
+    text-align: left;
+}
+
+.discipline-details-table td:nth-child(4) {
+    text-align: center;
+}
+
+.discipline-details-table tbody tr:nth-child(even) {
+    background-color: var(--row-even-bg);
+}
+
+.discipline-details-table tbody tr:hover {
+    background-color: var(--row-hover-bg);
+}
+
+.discipline-total {
+    font-weight: 600;
+    background-color: var(--bg-secondary) !important;
+    border-top: 2px solid var(--border-color) !important;
+}
+
+.discipline-type-header {
+    margin-top: 20px;
+    margin-bottom: 10px;
+    font-weight: 600;
+    color: var(--text-color);
+    font-size: 1.1rem;
+}
+
+.discipline-type-header:first-child {
+    margin-top: 0;
+}
+
+.clickable-discipline {
+    cursor: pointer;
+    color: var(--link-color);
+    text-decoration: underline;
+}
+
+.clickable-discipline:hover {
+    color: var(--link-hover-color);
+}

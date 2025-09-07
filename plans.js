@@ -72,6 +72,9 @@ function buildPlans(csvText) {
   const lines = csvText.replace(/\r\n?/g, '\n').split('\n');
   const plansMap = new Map(); // key: нормализованная дисциплина без префикса I/II
 
+  // Очищаем предыдущие сырые данные
+  rawScheduleData = [];
+
   // Некоторые файлы содержат 4 служебные строки в начале — пропустим первые 4,
   // но если данных мало, начнём с 0
   const startIdx = Math.min(4, Math.max(0, lines.length - 1));
@@ -80,6 +83,9 @@ function buildPlans(csvText) {
     if (!line) continue;
     const cols = line.split(';');
     if (cols.length < 15) continue; // минимально достаточное кол-во полей
+
+    // Сохраняем сырые данные для детального просмотра
+    rawScheduleData.push(cols);
 
     let discipline = cols[6] ? cols[6].trim() : '';
     if (!discipline) continue;
@@ -156,7 +162,7 @@ function renderPlans(list) {
     const tr = document.createElement('tr');
     const practitioners = item.practitioners.length ? item.practitioners.join(', ') : '—';
     tr.innerHTML = `
-      <td>${escapeHtml(item.discipline)}</td>
+      <td><span class="clickable-discipline" onclick="showDisciplineDetails('${escapeHtml(item.discipline)}')">${escapeHtml(item.discipline)}</span></td>
       <td>${escapeHtml(item.lecturer || '—')}</td>
       <td>${escapeHtml(practitioners)}</td>
     `;
@@ -169,5 +175,167 @@ function escapeHtml(s) {
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   })[c]);
 }
+
+// Глобальные переменные для работы с данными
+let rawScheduleData = [];
+
+// Функция для показа детальной информации о дисциплине
+function showDisciplineDetails(disciplineName) {
+  const modal = document.getElementById('disciplineModal');
+  const title = document.getElementById('modalDisciplineTitle');
+  const content = document.getElementById('modalContent');
+  
+  title.textContent = disciplineName;
+  
+  // Получаем все занятия по этой дисциплине
+  const disciplineLessons = getDisciplineLessons(disciplineName);
+  
+  if (!disciplineLessons.length) {
+    content.innerHTML = '<p>Нет данных о занятиях по данной дисциплине.</p>';
+    modal.style.display = 'block';
+    return;
+  }
+  
+  // Группируем занятия по типам
+  const lectures = disciplineLessons.filter(lesson => lesson.type.includes('лекц'));
+  const practices = disciplineLessons.filter(lesson => !lesson.type.includes('лекц'));
+  
+  let html = '';
+  
+  // Лекции
+  if (lectures.length > 0) {
+    html += '<div class="discipline-type-header">Лекции</div>';
+    html += createLessonsTable(lectures, 'Лекция');
+  }
+  
+  // Практические занятия
+  if (practices.length > 0) {
+    html += '<div class="discipline-type-header">Практические занятия</div>';
+    html += createLessonsTable(practices, 'Практическое занятие');
+  }
+  
+  content.innerHTML = html;
+  modal.style.display = 'block';
+}
+
+// Функция для получения всех занятий по дисциплине
+function getDisciplineLessons(disciplineName) {
+  if (!rawScheduleData.length) return [];
+  
+  return rawScheduleData.filter(row => {
+    let discipline = row[6] ? row[6].trim() : '';
+    if (!discipline) return false;
+    
+    // Убираем префикс I/II из названия дисциплины для сравнения
+    const low = discipline.toLowerCase();
+    if (low.startsWith('i ') || low.startsWith('ii ')) {
+      discipline = discipline.substring(discipline.indexOf(' ') + 1).trim();
+    }
+    
+    return discipline === disciplineName;
+  }).map(row => ({
+    date: row[14] ? row[14].trim() : '',
+    type: row[11] ? row[11].trim() : '',
+    teacher: row[8] ? row[8].trim() : ''
+  })).sort((a, b) => {
+    // Сортируем по дате
+    const dateA = a.date.split('.');
+    const dateB = b.date.split('.');
+    if (dateA.length === 2 && dateB.length === 2) {
+      const monthA = parseInt(dateA[1]);
+      const dayA = parseInt(dateA[0]);
+      const monthB = parseInt(dateB[1]);
+      const dayB = parseInt(dateB[0]);
+      
+      if (monthA !== monthB) return monthA - monthB;
+      return dayA - dayB;
+    }
+    return 0;
+  });
+}
+
+// Функция для создания таблицы занятий
+function createLessonsTable(lessons, prefix) {
+  if (!lessons.length) return '';
+  
+  let html = `
+    <table class="discipline-details-table">
+      <thead>
+        <tr>
+          <th>№ п/п</th>
+          <th>Дата</th>
+          <th>Тема занятия</th>
+          <th>Кол-во часов</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+  
+  lessons.forEach((lesson, index) => {
+    const formattedDate = formatLessonDate(lesson.date);
+    html += `
+      <tr>
+        <td>${index + 1}</td>
+        <td>${formattedDate}</td>
+        <td>${prefix} ${index + 1}</td>
+        <td>2</td>
+      </tr>
+    `;
+  });
+  
+  // Итого
+  html += `
+      <tr class="discipline-total">
+        <td colspan="3">Итого часов</td>
+        <td>${lessons.length * 2}</td>
+      </tr>
+    </tbody>
+  </table>
+  `;
+  
+  return html;
+}
+
+// Функция для форматирования даты занятия
+function formatLessonDate(dateStr) {
+  if (!dateStr) return '-';
+  
+  // Парсим дату в формате "д.м" (например, "2.9")
+  const parts = dateStr.split('.');
+  if (parts.length !== 2) return dateStr;
+  
+  const day = parseInt(parts[0]);
+  const month = parseInt(parts[1]);
+  
+  if (isNaN(day) || isNaN(month)) return dateStr;
+  
+  // Создаем дату (предполагаем текущий год)
+  const currentYear = new Date().getFullYear();
+  const date = new Date(currentYear, month - 1, day);
+  
+  // Проверяем, что дата валидна
+  if (isNaN(date.getTime())) return dateStr;
+  
+  // Форматируем дату
+  return date.toLocaleDateString('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+}
+
+// Функция для закрытия модального окна
+function closeDisciplineModal() {
+  const modal = document.getElementById('disciplineModal');
+  modal.style.display = 'none';
+}
+
+// Обработчик клика вне модального окна
+document.addEventListener('click', function(event) {
+  const modal = document.getElementById('disciplineModal');
+  if (event.target === modal) {
+    closeDisciplineModal();
+  }
+});
 
 

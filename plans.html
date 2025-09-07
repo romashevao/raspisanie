@@ -35,6 +35,19 @@
         </div>
     </div>
 
+    <!-- Модальное окно для детальной информации о дисциплине -->
+    <div id="disciplineModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h3 id="modalDisciplineTitle">Детали дисциплины</h3>
+                <button class="modal-close" onclick="closeDisciplineModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="modalContent"></div>
+            </div>
+        </div>
+    </div>
+
     <script src="plans.js"></script>
 </body>
 </html>
