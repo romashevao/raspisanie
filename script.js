@@ -284,19 +284,11 @@ function setupEventListeners() {
         toggleTheme();
     });
 
-    // Кнопка информации о файлах
-    const filesBtn = document.getElementById('filesInfoBtn');
-    const modal = document.getElementById('filesInfoModal');
-    const modalClose = document.getElementById('filesInfoClose');
-    if (filesBtn && modal && modalClose) {
-        filesBtn.addEventListener('click', async function() {
-            await showFilesInfoModal();
-        });
-        modalClose.addEventListener('click', function() {
-            modal.style.display = 'none';
-        });
-        modal.addEventListener('click', function(e) {
-            if (e.target === modal) modal.style.display = 'none';
+    // Переход на страницу планов
+    const plansBtn = document.getElementById('plansBtn');
+    if (plansBtn) {
+        plansBtn.addEventListener('click', function() {
+            window.location.href = 'plans.html';
         });
     }
 }
@@ -913,9 +905,9 @@ function showDatePicker() {
             if (!isNaN(d.getTime())) {
                 selectedDate = d;
                 field.value = formatDateForInput(d);
-                updateScheduleInfo();
-                updateSchedule();
-            }
+            updateScheduleInfo();
+            updateSchedule();
+        }
         }
     };
     hiddenDatePicker.addEventListener('change', handler, { once: true });
@@ -943,8 +935,8 @@ function showDatePicker() {
                 const btn = document.getElementById('datePickerBtn');
                 try { btn && btn.focus({ preventScroll: true }); } catch (_) {}
                 setTimeout(() => { tryOpen(); }, 0);
-            }
-        }, 0);
+        }
+    }, 0);
     }
 }
 
@@ -994,90 +986,4 @@ function initializeTheme() {
     }
 }
 
-// ============ Метаданные файлов ============
-async function showFilesInfoModal() {
-    const modal = document.getElementById('filesInfoModal');
-    const loading = document.getElementById('filesInfoLoading');
-    const errorEl = document.getElementById('filesInfoError');
-    const tableBody = document.querySelector('#filesInfoTable tbody');
-    if (!modal || !loading || !errorEl || !tableBody) return;
-
-    // Показать модалку
-    modal.style.display = 'flex';
-    errorEl.style.display = 'none';
-    tableBody.innerHTML = '';
-    loading.style.display = 'inline-block';
-
-    // Список целевых файлов в корне
-    const files = ['index.html', 'styles.css', 'script.js', 'OP.csv', 'README.md', 'package.json'];
-
-    try {
-        const rows = await Promise.all(files.map(f => fetchHeadSafe(f)));
-        rows.forEach(info => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${escapeHtml(info.name)}</td>
-                <td>${formatBytes(info.size)}</td>
-                <td>${info.lastModified || '—'}</td>
-            `;
-            tableBody.appendChild(tr);
-        });
-    } catch (e) {
-        errorEl.style.display = 'block';
-    } finally {
-        loading.style.display = 'none';
-    }
-}
-
-async function fetchHeadSafe(path) {
-    const result = { name: path, size: '—', lastModified: '' };
-    try {
-        // HEAD может быть недоступен на file://, делаем GET с no-store и без тела чтения
-        const res = await fetch(path, { method: 'GET', cache: 'no-store' });
-        // Попробуем вытащить метаданные из заголовков
-        const lm = res.headers.get('Last-Modified');
-        const cl = res.headers.get('Content-Length');
-        result.lastModified = lm ? formatHttpDate(lm) : '';
-        result.size = cl ? Number(cl) : (res.body && res.headers.get('Content-Length') ? Number(res.headers.get('Content-Length')) : '—');
-
-        // Если размер не удалось получить из заголовка, попробуем вычислить по blob
-        if (result.size === '—') {
-            try {
-                const blob = await res.blob();
-                result.size = blob.size;
-            } catch (_) {}
-        }
-    } catch (e) {
-        // В оффлайне/локально заголовки могут быть пустыми
-    }
-    return result;
-}
-
-function formatHttpDate(h) {
-    const d = new Date(h);
-    if (isNaN(d.getTime())) return h;
-    const dd = d.getDate().toString().padStart(2, '0');
-    const mm = (d.getMonth() + 1).toString().padStart(2, '0');
-    const yyyy = d.getFullYear();
-    const hh = d.getHours().toString().padStart(2, '0');
-    const min = d.getMinutes().toString().padStart(2, '0');
-    const ss = d.getSeconds().toString().padStart(2, '0');
-    return `${dd}.${mm}.${yyyy} ${hh}:${min}:${ss}`;
-}
-
-function formatBytes(bytes) {
-    if (bytes === '—' || bytes == null || isNaN(bytes)) return '—';
-    const sizes = ['B', 'KB', 'MB', 'GB'];
-    let i = 0;
-    let v = Number(bytes);
-    while (v >= 1024 && i < sizes.length - 1) {
-        v /= 1024; i++;
-    }
-    return `${v.toFixed(v < 10 && i > 0 ? 1 : 0)} ${sizes[i]}`;
-}
-
-function escapeHtml(s) {
-    return String(s).replace(/[&<>"]+/g, function(c) {
-        return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c];
-    });
-}
+// Удалены функции модалки файлов
