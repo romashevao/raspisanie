@@ -5,7 +5,7 @@ let currentDate = new Date();
 let selectedTeacher = '';
 let selectedDate = new Date();
 let isDatePickerOpening = false; // больше не используем задержки, оставлено для совместимости
-let hiddenDatePicker = null; // постоянный скрытый input[type="date"]
+let hiddenDatePicker = null; // не используем, оставлено для совместимости
 
 // Константы для времени занятий
 const LESSON_TIMES = {
@@ -873,51 +873,76 @@ function setupDateInputFormat() {
 }
 
 // Показать календарь для выбора даты
-function ensureHiddenDatePicker() {
-    if (hiddenDatePicker && document.body.contains(hiddenDatePicker)) return hiddenDatePicker;
-    hiddenDatePicker = document.createElement('input');
-    hiddenDatePicker.type = 'date';
-    hiddenDatePicker.tabIndex = -1;
-    hiddenDatePicker.setAttribute('aria-hidden', 'true');
-    hiddenDatePicker.style.position = 'absolute';
-    hiddenDatePicker.style.left = '-9999px';
-    hiddenDatePicker.style.opacity = '0';
-    hiddenDatePicker.addEventListener('change', function() {
-        if (this.value) {
-            const date = new Date(this.value);
-            selectedDate = date;
-            document.getElementById('dateInput').value = formatDateForInput(date);
-            updateScheduleInfo();
-            updateSchedule();
-        }
-    });
-    document.body.appendChild(hiddenDatePicker);
-    return hiddenDatePicker;
-}
-
 function showDatePicker() {
-    const picker = ensureHiddenDatePicker();
-    // Устанавливаем текущую дату перед показом
-    if (selectedDate) {
-        const year = selectedDate.getFullYear();
-        const month = (selectedDate.getMonth() + 1).toString().padStart(2, '0');
-        const day = selectedDate.getDate().toString().padStart(2, '0');
-        picker.value = `${year}-${month}-${day}`;
-    } else {
-        picker.value = '';
+    const field = document.getElementById('dateInput');
+    if (!field) return;
+
+    // Подготовка ISO-значения для type=date
+    let dateForPicker = selectedDate;
+    if (!dateForPicker && field.value && field.value.length === 10) {
+        const parsed = parseDateFromInput(field.value);
+        if (parsed) dateForPicker = parsed;
     }
-    try {
-        picker.focus({ preventScroll: true });
-    } catch (_) {}
-    try {
-        if (typeof picker.showPicker === 'function') {
-            picker.showPicker(); // мгновенно без setTimeout
-        } else {
-            picker.click();
+    const yyyy = (dateForPicker ? dateForPicker.getFullYear() : new Date().getFullYear());
+    const mm = ((dateForPicker ? dateForPicker.getMonth() : new Date().getMonth()) + 1).toString().padStart(2, '0');
+    const dd = (dateForPicker ? dateForPicker.getDate() : new Date().getDate()).toString().padStart(2, '0');
+    const iso = `${yyyy}-${mm}-${dd}`;
+
+    const prevType = field.type;
+    const prevValue = field.value;
+
+    // Переключаем во встроенный date
+    field.type = 'date';
+    field.value = iso;
+    // Минимизируем визуальные артефакты
+    const prevStyle = { position: field.style.position, left: field.style.left, opacity: field.style.opacity };
+    field.style.position = 'absolute';
+    field.style.left = '-9999px';
+    field.style.opacity = '0';
+
+    const cleanup = (changed) => {
+        // Возвращаем поле в текстовый режим с нужным значением
+        field.type = 'text';
+        field.style.position = prevStyle.position || '';
+        field.style.left = prevStyle.left || '';
+        field.style.opacity = prevStyle.opacity || '';
+        if (!changed) {
+            field.value = prevValue;
         }
-    } catch (e) {
-        // Доп. попытка
-        try { picker.click(); } catch (_) {}
+    };
+
+    const onChange = () => {
+        if (field.value) {
+            const d = new Date(field.value);
+            if (!isNaN(d.getTime())) {
+                selectedDate = d;
+                field.value = formatDateForInput(d);
+                updateScheduleInfo();
+                updateSchedule();
+                cleanup(true);
+                return;
+            }
+        }
+        cleanup(false);
+    };
+
+    const onBlur = () => {
+        // Если закрыли без выбора
+        cleanup(false);
+    };
+
+    field.addEventListener('change', onChange, { once: true });
+    field.addEventListener('blur', onBlur, { once: true });
+
+    try { field.focus({ preventScroll: true }); } catch (_) {}
+    try {
+        if (typeof field.showPicker === 'function') {
+            field.showPicker();
+        } else {
+            field.click();
+        }
+    } catch (_) {
+        try { field.click(); } catch (_) {}
     }
 }
 
