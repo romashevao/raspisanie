@@ -219,7 +219,7 @@ body {
     position: relative;
     display: flex;
     align-items: center;
-    max-width: 160px;
+    max-width: 200px;
 }
 
 .date-input {
@@ -227,7 +227,7 @@ body {
     text-align: center;
     font-family: inherit;
     letter-spacing: 1px;
-    padding-right: 40px;
+    padding-right: 52px; /* больше места под иконку */
 }
 
 /* Ряд: поле даты + кнопки вплотную */
@@ -733,7 +733,7 @@ body {
         font-size: 0.8rem;
     }
     
-    .date-input-wrapper { max-width: 140px; }
+    .date-input-wrapper { max-width: 180px; }
     .date-actions { gap: 6px; }
     .date-actions .btn { padding: 8px 9px; }
     
@@ -829,7 +829,7 @@ body {
         font-size: 0.75rem;
     }
     
-    .date-input-wrapper { max-width: 130px; }
+    .date-input-wrapper { max-width: 160px; }
     .date-actions { gap: 6px; flex-wrap: wrap; }
 }
 
@@ -872,7 +872,7 @@ body {
         max-width: 150px;
     }
     
-    .date-input-wrapper { max-width: 120px; }
+    .date-input-wrapper { max-width: 150px; }
 }
 
 /* Loading animation */
