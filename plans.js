@@ -16,6 +16,10 @@ let teachers = []; // список всех преподавателей
     allPlans = buildPlans(csvText);
     teachers = extractTeachers(allPlans);
     
+    console.log('Загружено планов:', allPlans.length);
+    console.log('Найдено преподавателей:', teachers.length);
+    console.log('Преподаватели:', teachers);
+    
     populateTeacherFilter();
     renderPlans(allPlans);
     
@@ -127,6 +131,8 @@ function populateTeacherFilter() {
   const select = document.getElementById('teacherFilter');
   if (!select) return;
   
+  console.log('Заполняем фильтр преподавателей:', teachers);
+  
   // Очищаем опции кроме первой
   while (select.children.length > 1) {
     select.removeChild(select.lastChild);
@@ -138,6 +144,8 @@ function populateTeacherFilter() {
     option.textContent = teacher;
     select.appendChild(option);
   });
+  
+  console.log('Добавлено опций:', select.children.length - 1);
 }
 
 function renderPlans(list) {
