@@ -43,6 +43,8 @@
                     <button type="button" id="datePickerBtn" class="date-picker-btn">
                         <i class="fas fa-calendar-alt"></i>
                     </button>
+                    <!-- Постоянный скрытый date-пикер для стабильного открытия -->
+                    <input type="date" id="hiddenDatePicker" aria-hidden="true" tabindex="-1" style="position:absolute;left:-9999px;opacity:0;width:0;height:0;pointer-events:none;" />
                 </div>
             </div>
 

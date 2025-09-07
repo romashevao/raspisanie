@@ -5,7 +5,7 @@ let currentDate = new Date();
 let selectedTeacher = '';
 let selectedDate = new Date();
 let isDatePickerOpening = false; // больше не используем задержки, оставлено для совместимости
-let hiddenDatePicker = null; // не используем, оставлено для совместимости
+let hiddenDatePicker = null; // будет ссылаться на #hiddenDatePicker из DOM
 
 // Константы для времени занятий
 const LESSON_TIMES = {
@@ -875,74 +875,44 @@ function setupDateInputFormat() {
 // Показать календарь для выбора даты
 function showDatePicker() {
     const field = document.getElementById('dateInput');
-    if (!field) return;
+    hiddenDatePicker = document.getElementById('hiddenDatePicker');
+    if (!field || !hiddenDatePicker) return;
 
-    // Подготовка ISO-значения для type=date
+    // Установим текущее значение в скрытый date-пикер
     let dateForPicker = selectedDate;
     if (!dateForPicker && field.value && field.value.length === 10) {
         const parsed = parseDateFromInput(field.value);
         if (parsed) dateForPicker = parsed;
     }
-    const yyyy = (dateForPicker ? dateForPicker.getFullYear() : new Date().getFullYear());
-    const mm = ((dateForPicker ? dateForPicker.getMonth() : new Date().getMonth()) + 1).toString().padStart(2, '0');
-    const dd = (dateForPicker ? dateForPicker.getDate() : new Date().getDate()).toString().padStart(2, '0');
-    const iso = `${yyyy}-${mm}-${dd}`;
+    const base = dateForPicker || new Date();
+    const yyyy = base.getFullYear();
+    const mm = (base.getMonth() + 1).toString().padStart(2, '0');
+    const dd = base.getDate().toString().padStart(2, '0');
+    hiddenDatePicker.value = `${yyyy}-${mm}-${dd}`;
 
-    const prevType = field.type;
-    const prevValue = field.value;
-
-    // Переключаем во встроенный date
-    field.type = 'date';
-    field.value = iso;
-    // Минимизируем визуальные артефакты
-    const prevStyle = { position: field.style.position, left: field.style.left, opacity: field.style.opacity };
-    field.style.position = 'absolute';
-    field.style.left = '-9999px';
-    field.style.opacity = '0';
-
-    const cleanup = (changed) => {
-        // Возвращаем поле в текстовый режим с нужным значением
-        field.type = 'text';
-        field.style.position = prevStyle.position || '';
-        field.style.left = prevStyle.left || '';
-        field.style.opacity = prevStyle.opacity || '';
-        if (!changed) {
-            field.value = prevValue;
-        }
-    };
-
-    const onChange = () => {
-        if (field.value) {
-            const d = new Date(field.value);
+    // Навесим обработчик разово
+    const handler = () => {
+        if (hiddenDatePicker.value) {
+            const d = new Date(hiddenDatePicker.value);
             if (!isNaN(d.getTime())) {
                 selectedDate = d;
                 field.value = formatDateForInput(d);
                 updateScheduleInfo();
                 updateSchedule();
-                cleanup(true);
-                return;
             }
         }
-        cleanup(false);
     };
+    hiddenDatePicker.addEventListener('change', handler, { once: true });
 
-    const onBlur = () => {
-        // Если закрыли без выбора
-        cleanup(false);
-    };
-
-    field.addEventListener('change', onChange, { once: true });
-    field.addEventListener('blur', onBlur, { once: true });
-
-    try { field.focus({ preventScroll: true }); } catch (_) {}
+    try { hiddenDatePicker.focus({ preventScroll: true }); } catch (_) {}
     try {
-        if (typeof field.showPicker === 'function') {
-            field.showPicker();
+        if (typeof hiddenDatePicker.showPicker === 'function') {
+            hiddenDatePicker.showPicker();
         } else {
-            field.click();
+            hiddenDatePicker.click();
         }
     } catch (_) {
-        try { field.click(); } catch (_) {}
+        try { hiddenDatePicker.click(); } catch (_) {}
     }
 }
 
