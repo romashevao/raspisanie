@@ -219,15 +219,16 @@ body {
     position: relative;
     display: flex;
     align-items: center;
-    max-width: 200px;
+    max-width: 260px;
 }
 
 .date-input {
     width: 100%;
-    text-align: center;
+    text-align: left;
     font-family: inherit;
     letter-spacing: 1px;
-    padding-right: 52px; /* больше места под иконку */
+    padding-right: 56px; /* больше места под иконку */
+    z-index: 1;
 }
 
 /* Ряд: поле даты + кнопки вплотную */
@@ -261,6 +262,7 @@ body {
     border-radius: 4px;
     transition: all var(--animation-duration) var(--animation-easing);
     font-size: 0.9rem;
+    z-index: 2;
 }
 
 .date-picker-btn:hover {
@@ -733,7 +735,7 @@ body {
         font-size: 0.8rem;
     }
     
-    .date-input-wrapper { max-width: 180px; }
+    .date-input-wrapper { max-width: 220px; }
     .date-actions { gap: 6px; }
     .date-actions .btn { padding: 8px 9px; }
     
@@ -829,7 +831,7 @@ body {
         font-size: 0.75rem;
     }
     
-    .date-input-wrapper { max-width: 160px; }
+    .date-input-wrapper { max-width: 200px; }
     .date-actions { gap: 6px; flex-wrap: wrap; }
 }
 
@@ -872,7 +874,7 @@ body {
         max-width: 150px;
     }
     
-    .date-input-wrapper { max-width: 150px; }
+    .date-input-wrapper { max-width: 180px; }
 }
 
 /* Loading animation */
