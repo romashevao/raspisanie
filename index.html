@@ -21,6 +21,9 @@
                 <button id="themeToggle" class="theme-toggle" title="Переключить тему">
                     <i class="fas fa-moon"></i>
                 </button>
+                <button id="filesInfoBtn" class="btn btn-secondary" title="Информация о файлах">
+                    <i class="fas fa-info-circle"></i> Файлы
+                </button>
                 <div class="current-datetime" id="currentDateTime"></div>
             </div>
         </header>
@@ -160,6 +163,33 @@
         <div class="week-schedule" id="weekSchedule" style="display: none;">
             <h3>Расписание на неделю</h3>
             <div class="week-days" id="weekDays"></div>
+        </div>
+        
+        <!-- Modal: Files Info -->
+        <div id="filesInfoModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fas fa-file-alt"></i> Информация о файлах</h3>
+                    <button class="modal-close" id="filesInfoClose" aria-label="Закрыть">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div id="filesInfoLoading" class="loading" style="display:none;"></div>
+                    <div id="filesInfoError" class="empty-state" style="display:none;">Не удалось получить информацию</div>
+                    <table class="files-info-table" id="filesInfoTable" style="width:100%; border-collapse:collapse;">
+                        <thead>
+                            <tr>
+                                <th>Файл</th>
+                                <th>Размер</th>
+                                <th>Последнее изменение</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                    <div class="files-info-note">Источники: заголовки Last-Modified/Content-Length. Для локальных файлов может быть недоступно.</div>
+                </div>
+            </div>
         </div>
     </div>
 
