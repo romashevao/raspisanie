@@ -1023,3 +1023,42 @@ body {
     color: var(--text-secondary);
     font-size: 0.85rem;
 }
+
+/* Стили для таблицы планов */
+#plansTable {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+#plansTable th,
+#plansTable td {
+    padding: 12px;
+    border: 1px solid var(--border-color);
+}
+
+#plansTable th {
+    background-color: var(--header-bg);
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+#plansTable th:nth-child(1),
+#plansTable td:nth-child(1) {
+    text-align: left; /* Дисциплина - по левому краю */
+}
+
+#plansTable th:nth-child(2),
+#plansTable td:nth-child(2),
+#plansTable th:nth-child(3),
+#plansTable td:nth-child(3) {
+    text-align: center; /* Преподаватели - по центру */
+}
+
+#plansTable tbody tr:nth-child(even) {
+    background-color: var(--row-even-bg);
+}
+
+#plansTable tbody tr:hover {
+    background-color: var(--row-hover-bg);
+}
