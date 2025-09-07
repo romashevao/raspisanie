@@ -1,4 +1,7 @@
 // Загружает OP.csv и строит таблицу дисциплин с лектором и руководителями практик
+let allPlans = []; // храним все планы для фильтрации
+let teachers = []; // список всех преподавателей
+
 (async function initPlans() {
   try {
     // Синхронизируем тему с главной страницей
@@ -10,8 +13,26 @@
     } catch (_) {}
 
     const csvText = await fetchCsv();
-    const list = buildPlans(csvText);
-    renderPlans(list);
+    allPlans = buildPlans(csvText);
+    teachers = extractTeachers(allPlans);
+    
+    populateTeacherFilter();
+    renderPlans(allPlans);
+    
+    // Обработчик фильтра
+    const filter = document.getElementById('teacherFilter');
+    if (filter) {
+      filter.addEventListener('change', function() {
+        const selectedTeacher = this.value;
+        const filteredPlans = selectedTeacher 
+          ? allPlans.filter(plan => 
+              plan.lecturer === selectedTeacher || 
+              plan.practitioners.includes(selectedTeacher)
+            )
+          : allPlans;
+        renderPlans(filteredPlans);
+      });
+    }
   } catch (e) {
     console.error('Ошибка загрузки планов:', e);
     const tbody = document.querySelector('#plansTable tbody');
@@ -91,6 +112,32 @@ function buildPlans(csvText) {
     lecturer: r.lecturer,
     practitioners: Array.from(r.practitioners)
   })).sort((a, b) => a.discipline.localeCompare(b.discipline, 'ru'));
+}
+
+function extractTeachers(plans) {
+  const teacherSet = new Set();
+  plans.forEach(plan => {
+    if (plan.lecturer) teacherSet.add(plan.lecturer);
+    plan.practitioners.forEach(p => teacherSet.add(p));
+  });
+  return Array.from(teacherSet).sort();
+}
+
+function populateTeacherFilter() {
+  const select = document.getElementById('teacherFilter');
+  if (!select) return;
+  
+  // Очищаем опции кроме первой
+  while (select.children.length > 1) {
+    select.removeChild(select.lastChild);
+  }
+  
+  teachers.forEach(teacher => {
+    const option = document.createElement('option');
+    option.value = teacher;
+    option.textContent = teacher;
+    select.appendChild(option);
+  });
 }
 
 function renderPlans(list) {
