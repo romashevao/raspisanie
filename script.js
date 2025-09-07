@@ -6,6 +6,9 @@ let selectedTeacher = '';
 let selectedDate = new Date();
 let isDatePickerOpening = false; // больше не используем задержки, оставлено для совместимости
 let hiddenDatePicker = null; // будет ссылаться на #hiddenDatePicker из DOM
+const STORAGE_KEYS = {
+    teacher: 'raspisanie:selectedTeacher'
+};
 
 // Константы для времени занятий
 const LESSON_TIMES = {
@@ -60,6 +63,7 @@ async function initializeApp() {
     try {
         await loadScheduleData();
         populateTeacherSelect();
+        restoreSavedTeacher();
         setupEventListeners();
         updateDateTime();
         setInterval(updateDateTime, 1000);
@@ -219,10 +223,22 @@ function populateTeacherSelect() {
     });
 }
 
+// Восстановление сохранённого преподавателя
+function restoreSavedTeacher() {
+    const saved = localStorage.getItem(STORAGE_KEYS.teacher);
+    if (!saved) return;
+    if (!teachers.includes(saved)) return; // если список обновился и такого нет
+    const select = document.getElementById('teacherSelect');
+    if (!select) return;
+    select.value = saved;
+    selectedTeacher = saved;
+}
+
 // Настройка обработчиков событий
 function setupEventListeners() {
     document.getElementById('teacherSelect').addEventListener('change', function() {
         selectedTeacher = this.value;
+        try { localStorage.setItem(STORAGE_KEYS.teacher, selectedTeacher || ''); } catch (_) {}
         updateScheduleInfo();
         updateSchedule();
     });
