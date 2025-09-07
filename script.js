@@ -4,6 +4,7 @@ let teachers = [];
 let currentDate = new Date();
 let selectedTeacher = '';
 let selectedDate = new Date();
+let isDatePickerOpening = false;
 
 // Константы для времени занятий
 const LESSON_TIMES = {
@@ -856,14 +857,18 @@ function setupDateInputFormat() {
 
 // Показать календарь для выбора даты
 function showDatePicker() {
+    if (isDatePickerOpening) return;
+    isDatePickerOpening = true;
+
     // Создаем скрытое поле date для использования встроенного календаря браузера
     const tempDateInput = document.createElement('input');
     tempDateInput.type = 'date';
+    tempDateInput.tabIndex = -1;
+    tempDateInput.setAttribute('aria-hidden', 'true');
     tempDateInput.style.position = 'absolute';
     tempDateInput.style.left = '-9999px';
     tempDateInput.style.opacity = '0';
-    tempDateInput.style.pointerEvents = 'none';
-    
+
     // Устанавливаем текущую дату
     if (selectedDate) {
         const year = selectedDate.getFullYear();
@@ -871,12 +876,16 @@ function showDatePicker() {
         const day = selectedDate.getDate().toString().padStart(2, '0');
         tempDateInput.value = `${year}-${month}-${day}`;
     }
-    
+
     document.body.appendChild(tempDateInput);
-    
-    // Показываем календарь
-    tempDateInput.showPicker();
-    
+
+    const cleanup = () => {
+        isDatePickerOpening = false;
+        if (document.body.contains(tempDateInput)) {
+            document.body.removeChild(tempDateInput);
+        }
+    };
+
     // Обрабатываем выбор даты
     tempDateInput.addEventListener('change', function() {
         if (this.value) {
@@ -886,17 +895,30 @@ function showDatePicker() {
             updateScheduleInfo();
             updateSchedule();
         }
-        document.body.removeChild(tempDateInput);
+        cleanup();
     });
-    
-    // Убираем временное поле при потере фокуса
+
+    // Убираем временное поле при потере фокуса (закрытие без выбора)
     tempDateInput.addEventListener('blur', function() {
         setTimeout(() => {
-            if (document.body.contains(tempDateInput)) {
-                document.body.removeChild(tempDateInput);
-            }
+            cleanup();
         }, 100);
     });
+
+    // Показываем календарь: сначала фокус, затем showPicker() в микрозадаче
+    tempDateInput.focus({ preventScroll: true });
+    setTimeout(() => {
+        try {
+            if (typeof tempDateInput.showPicker === 'function') {
+                tempDateInput.showPicker();
+            } else {
+                tempDateInput.click();
+            }
+        } catch (e) {
+            // Fallback для браузеров, где нужен пользовательский фокус/тайминг
+            try { tempDateInput.click(); } catch (_) {}
+        }
+    }, 0);
 }
 
 // Переключение темы
