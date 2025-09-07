@@ -222,7 +222,7 @@ function showDisciplineDetails(disciplineName) {
 function getDisciplineLessons(disciplineName) {
   if (!rawScheduleData.length) return [];
   
-  const lessons = [];
+  const lessonsMap = new Map(); // key: "type_teacher", value: { dates: [], type, teacher }
   
   rawScheduleData.forEach(row => {
     let discipline = row[6] ? row[6].trim() : '';
@@ -242,17 +242,41 @@ function getDisciplineLessons(disciplineName) {
       const teacher = row[8] ? row[8].trim() : '';
       
       if (startDate && endDate && dayOfWeek) {
-        // Генерируем все даты занятий в диапазоне
+        // Генерируем даты для этого диапазона
         const dates = generateLessonDates(startDate, endDate, dayOfWeek);
-        dates.forEach(date => {
-          lessons.push({
-            date: date,
+        
+        // Создаем ключ для группировки (тип + преподаватель)
+        const key = `${lessonType}_${teacher}`;
+        
+        if (!lessonsMap.has(key)) {
+          lessonsMap.set(key, {
+            dates: [],
             type: lessonType,
             teacher: teacher
           });
+        }
+        
+        // Добавляем даты к существующему набору
+        const existing = lessonsMap.get(key);
+        dates.forEach(date => {
+          if (!existing.dates.includes(date)) {
+            existing.dates.push(date);
+          }
         });
       }
     }
+  });
+  
+  // Преобразуем в массив занятий
+  const lessons = [];
+  lessonsMap.forEach((lessonData, key) => {
+    lessonData.dates.forEach(date => {
+      lessons.push({
+        date: date,
+        type: lessonData.type,
+        teacher: lessonData.teacher
+      });
+    });
   });
   
   // Сортируем по дате
