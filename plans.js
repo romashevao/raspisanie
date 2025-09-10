@@ -245,14 +245,24 @@ function getDisciplineLessons(disciplineName) {
         // Генерируем даты для этого диапазона
         const dates = generateLessonDates(startDate, endDate, dayOfWeek);
         
-        // Создаем ключ для группировки (тип + преподаватель)
-        const key = `${lessonType}_${teacher}`;
+        // Получаем время занятия для более точной группировки
+        const startHour = row[17] ? row[17].trim() : '';
+        const startMin = row[18] ? row[18].trim() : '';
+        const groupNumber = row[9] ? row[9].trim() : '';
+        
+        // Создаем ключ для группировки (тип + преподаватель + время + группа)
+        // Это позволит различать занятия в разное время и для разных групп
+        const timeKey = `${startHour}.${startMin}`;
+        const groupKey = groupNumber ? `_гр${groupNumber}` : '';
+        const key = `${lessonType}_${teacher}_${timeKey}${groupKey}`;
         
         if (!lessonsMap.has(key)) {
           lessonsMap.set(key, {
             dates: [],
             type: lessonType,
-            teacher: teacher
+            teacher: teacher,
+            time: timeKey,
+            group: groupNumber
           });
         }
         
@@ -274,7 +284,9 @@ function getDisciplineLessons(disciplineName) {
       lessons.push({
         date: date,
         type: lessonData.type,
-        teacher: lessonData.teacher
+        teacher: lessonData.teacher,
+        time: lessonData.time,
+        group: lessonData.group
       });
     });
   });
@@ -357,7 +369,9 @@ function createLessonsTable(lessons, prefix) {
         <tr>
           <th>№ п/п</th>
           <th>Дата</th>
+          <th>Время</th>
           <th>Тема занятия</th>
+          <th>Группа</th>
           <th>Кол-во часов</th>
         </tr>
       </thead>
@@ -366,11 +380,16 @@ function createLessonsTable(lessons, prefix) {
   
   lessons.forEach((lesson, index) => {
     const formattedDate = formatLessonDate(lesson.date);
+    const timeStr = lesson.time ? formatTimeFromKey(lesson.time) : '—';
+    const groupStr = lesson.group ? `подгр. ${lesson.group}` : '—';
+    
     html += `
       <tr>
         <td>${index + 1}</td>
         <td>${formattedDate}</td>
+        <td>${timeStr}</td>
         <td>${prefix} ${index + 1}</td>
+        <td>${groupStr}</td>
         <td>2</td>
       </tr>
     `;
@@ -379,7 +398,7 @@ function createLessonsTable(lessons, prefix) {
   // Итого
   html += `
       <tr class="discipline-total">
-        <td colspan="3">Итого часов</td>
+        <td colspan="5">Итого часов</td>
         <td>${lessons.length * 2}</td>
       </tr>
     </tbody>
@@ -415,6 +434,23 @@ function formatLessonDate(dateStr) {
     month: '2-digit',
     year: 'numeric'
   });
+}
+
+// Функция для форматирования времени из ключа
+function formatTimeFromKey(timeKey) {
+  if (!timeKey) return '—';
+  
+  // Парсим время в формате "час.минуты" (например, "10.35")
+  const parts = timeKey.split('.');
+  if (parts.length !== 2) return timeKey;
+  
+  const hour = parseInt(parts[0]);
+  const minute = parts[1];
+  
+  if (isNaN(hour)) return timeKey;
+  
+  // Форматируем время
+  return `${hour.toString().padStart(2, '0')}:${minute}`;
 }
 
 // Функция для закрытия модального окна
