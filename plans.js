@@ -228,6 +228,9 @@ function getDisciplineLessons(disciplineName) {
     let discipline = row[6] ? row[6].trim() : '';
     if (!discipline) return;
     
+    // Сохраняем оригинальное название с префиксом для определения недели
+    const originalDiscipline = discipline;
+    
     // Убираем префикс I/II из названия дисциплины для сравнения
     const low = discipline.toLowerCase();
     if (low.startsWith('i ') || low.startsWith('ii ')) {
@@ -242,8 +245,8 @@ function getDisciplineLessons(disciplineName) {
       const teacher = row[8] ? row[8].trim() : '';
       
       if (startDate && endDate && dayOfWeek) {
-        // Генерируем даты для этого диапазона
-        const dates = generateLessonDates(startDate, endDate, dayOfWeek);
+        // Генерируем даты для этого диапазона с учетом недель
+        const dates = generateLessonDatesWithWeeks(startDate, endDate, dayOfWeek, originalDiscipline);
         
         // Получаем время занятия для более точной группировки
         const startHour = row[17] ? row[17].trim() : '';
@@ -357,6 +360,90 @@ function generateLessonDates(startDateStr, endDateStr, dayOfWeek) {
   }
   
   return dates;
+}
+
+// Функция для генерации дат занятий с учетом чередования недель
+function generateLessonDatesWithWeeks(startDateStr, endDateStr, dayOfWeek, originalDiscipline) {
+  const dates = [];
+  
+  // Парсим начальную и конечную даты
+  const startParts = startDateStr.split('.');
+  const endParts = endDateStr.split('.');
+  
+  if (startParts.length !== 2 || endParts.length !== 2) return dates;
+  
+  const startDay = parseInt(startParts[0]);
+  const startMonth = parseInt(startParts[1]);
+  const endDay = parseInt(endParts[0]);
+  const endMonth = parseInt(endParts[1]);
+  
+  if (isNaN(startDay) || isNaN(startMonth) || isNaN(endDay) || isNaN(endMonth)) return dates;
+  
+  // Создаем даты
+  const currentYear = new Date().getFullYear();
+  const startDate = new Date(currentYear, startMonth - 1, startDay);
+  const endDate = new Date(currentYear, endMonth - 1, endDay);
+  
+  if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return dates;
+  
+  // Маппинг дней недели
+  const dayMap = {
+    'пн': 1, 'вт': 2, 'ср': 3, 'чт': 4, 'пт': 5, 'сб': 6, 'вс': 0
+  };
+  
+  const targetDay = dayMap[dayOfWeek.toLowerCase()];
+  if (targetDay === undefined) return dates;
+  
+  // Определяем тип недели из названия дисциплины
+  const disciplineLower = originalDiscipline.toLowerCase();
+  const isFirstWeek = disciplineLower.startsWith('i ');
+  const isSecondWeek = disciplineLower.startsWith('ii ');
+  const isEveryWeek = !isFirstWeek && !isSecondWeek;
+  
+  // Находим первое вхождение нужного дня недели
+  let currentDate = new Date(startDate);
+  while (currentDate.getDay() !== targetDay && currentDate <= endDate) {
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+  
+  // Генерируем даты с учетом недель
+  while (currentDate <= endDate) {
+    // Определяем номер недели для текущей даты
+    const weekNumber = getWeekNumberForDate(currentDate);
+    
+    // Проверяем, должна ли эта дата включаться
+    let shouldInclude = false;
+    if (isEveryWeek) {
+      shouldInclude = true; // Занятия без префикса проводятся каждую неделю
+    } else if (isFirstWeek && weekNumber === 'I') {
+      shouldInclude = true; // Занятия с префиксом I только в I неделю
+    } else if (isSecondWeek && weekNumber === 'II') {
+      shouldInclude = true; // Занятия с префиксом II только во II неделю
+    }
+    
+    if (shouldInclude) {
+      const day = currentDate.getDate();
+      const month = currentDate.getMonth() + 1;
+      dates.push(`${day}.${month}`);
+    }
+    
+    // Переходим к следующей неделе
+    currentDate.setDate(currentDate.getDate() + 7);
+  }
+  
+  return dates;
+}
+
+// Функция для определения номера недели (I или II) для конкретной даты
+function getWeekNumberForDate(date) {
+  const startDate = new Date(2025, 8, 1); // 1 сентября 2025
+  const diffTime = date - startDate;
+  const diffWeeks = Math.floor(diffTime / (7 * 24 * 60 * 60 * 1000));
+  
+  if (diffWeeks < 0) return 'I';
+  
+  // Недели чередуются I-II-I-II и т.д.
+  return (diffWeeks % 2 === 0) ? 'I' : 'II';
 }
 
 // Функция для создания таблицы занятий
